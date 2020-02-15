@@ -1,0 +1,28 @@
+ALTER PROCEDURE GetDownlineCount
+	--GetDownlineCount 'LHK170008'
+	@CustomerCode VARCHAR(50)
+AS
+BEGIN
+	DECLARE @DownlineCount INT = 0
+	;WITH ChildReference(CustomerCode)
+	AS
+	(
+		SELECT CustomerCode FROM Customer WHERE PaymentRefCode = @CustomerCode
+		UNION ALL
+		SELECT C.CustomerCode
+		FROM Customer C INNER JOIN ChildReference CR ON CR.CustomerCode = C.PaymentRefCode
+	)
+	SELECT @DownlineCount = COUNT(CustomerCode) + 1 FROM ChildReference
+	SELECT *, @DownlineCount AS DownlineCount FROM Designations WHERE @DownlineCount >= CountFROM AND @DownlineCount <= CountTo
+	
+	IF EXISTS(SELECT * FROM Designations WHERE CountTo = @DownlineCount)
+	BEGIN
+		SELECT * FROM Designations WHERE CountFROM <= @DownlineCount + 1 ORDER BY AltRank
+	END
+	ELSE
+	BEGIN
+		SELECT * FROM Designations WHERE CountFROM <= @DownlineCount ORDER BY AltRank
+	END
+END
+
+
